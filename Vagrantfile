@@ -38,7 +38,6 @@ Vagrant.configure("2") do |config|
   # the path on the guest to mount the folder. And the optional third
   # argument is a set of non-required options.
   # config.vm.synced_folder "../data", "/vagrant_data"
-  config.vm.synced_folder ".", "/vagrant", type: "rsync"
 
   # Provider-specific configuration so you can fine-tune various
   # backing providers for Vagrant. These expose provider-specific options.
@@ -68,25 +67,24 @@ Vagrant.configure("2") do |config|
   config.vm.provision "shell", inline: <<-SHELL
     cd /vagrant
     sudo yum -y update
-    sudo yum -y install httpd php mariadb mariadb-server vim git
-    
+    sudo yum -y install httpd mariadb mariadb-server php php-mysql vim git
+
+    sudo echo "include_path='/vagrant/library'" >> /etc/php.ini
+
     sudo systemctl enable mariadb.service
     sudo systemctl restart mariadb.service
     sudo systemctl enable httpd.service
     sudo systemctl restart httpd.service
     
     sudo sed -i "57i LoadModule rewrite_module modules/mod_rewrite.so" /etc/httpd/conf/httpd.conf 
-    sudo gawk 'NR==151 { sub("AllowOverride None", "AllowOverride All" )}' /etc/httpd/conf/httpd.conf
-    
+    sudo sed -i "7i SELINUX=disabled" /etc/selinux/config
+    sudo gawk 'NR==152 { sub("AllowOverride None", "AllowOverride All")}' /etc/httpd/conf/httpd.conf
+
+    sudo rm -rf /var/www/html
+    sudo ln -s /vagrant/public /var/www/html
+    echo -e "\nn\n\n\n\n\n " | mysql_secure_installation 2>/dev/null
+  
+    sudo mysql -u root < ddl.sql
+
   SHELL
 end
-
-
-
-
-
-
-
-
-
-
